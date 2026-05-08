@@ -4,12 +4,13 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>UrbanMind AI — Smart City Expansion Planner</title>
-    <meta name="description" content="AI-powered smart city expansion planning simulation" />
+    <title>CivicOps Planner — Internal AI Planning Dashboard</title>
+    <meta name="description" content="Internal AI planning dashboard for city infrastructure teams. Identify service gaps, plan infrastructure, assign department tasks, and export planning memos." />
+    <meta name="robots" content="noindex" />
   </head>
   <body>
     <div id="boot-status" style="position:fixed;top:10px;left:10px;z-index:999999;background:#131929;color:#e2e8f0;border:1px solid #2d4a7a;border-radius:6px;padding:8px 10px;font:12px system-ui,sans-serif">
-      UrbanMind loading...
+      CivicOps loading...
     </div>
     <div id="root"></div>
     <script>
@@ -18,7 +19,7 @@
         if (el) {
           el.style.borderColor = '#ef4444'
           el.style.color = '#fecaca'
-          el.textContent = 'UrbanMind error: ' + (event.message || 'unknown error')
+          el.textContent = 'CivicOps error: ' + (event.message || 'unknown error')
         }
       })
       window.addEventListener('unhandledrejection', function (event) {
@@ -26,7 +27,7 @@
         if (el) {
           el.style.borderColor = '#ef4444'
           el.style.color = '#fecaca'
-          el.textContent = 'UrbanMind error: ' + ((event.reason && event.reason.message) || event.reason || 'promise failed')
+          el.textContent = 'CivicOps error: ' + ((event.reason && event.reason.message) || event.reason || 'promise failed')
         }
       })
     </script>

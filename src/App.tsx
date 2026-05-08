@@ -8,6 +8,9 @@ import { NotificationBanner } from '@/components/Layout/NotificationBanner'
 import { StepSummaryPanel } from '@/components/Layout/StepSummaryPanel'
 import { MapContainer } from '@/components/Map/MapContainer'
 import { LandingScreen } from '@/components/UI/LandingScreen'
+import { WorkQueue } from '@/components/Planning/WorkQueue'
+import { PlanningMemo } from '@/components/Planning/PlanningMemo'
+import { BudgetPanel } from '@/components/Planning/BudgetPanel'
 import { useCityStore } from '@/stores/cityStore'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { useWebSocket } from '@/hooks/useWebSocket'
@@ -15,16 +18,16 @@ import type { CityProfile, MetricsSnapshot } from '@/types/city.types'
 import type { AgentAction } from '@/types/simulation.types'
 
 const ZONE_DISPLAY: Record<string, string> = {
-  RES_LOW_DETACHED: 'Low-Density Residential',
-  RES_MED_APARTMENT: 'Med-Density Apartment',
-  RES_HIGH_TOWER: 'High-Rise Tower',
-  COM_SMALL_SHOP: 'Small Commercial',
-  COM_OFFICE_PLAZA: 'Office Plaza',
-  PARK_SMALL: 'Small Park',
-  BUS_STATION: 'Bus Station',
-  EDU_HIGH: 'High School',
-  HEALTH_HOSPITAL: 'Hospital',
-  SMART_TRAFFIC_LIGHT: 'Smart Traffic Light',
+  RES_LOW_DETACHED: 'Residential — Low Density',
+  RES_MED_APARTMENT: 'Residential — Medium Density',
+  RES_HIGH_TOWER: 'Residential — High Density',
+  COM_SMALL_SHOP: 'Commercial — Retail',
+  COM_OFFICE_PLAZA: 'Commercial — Office',
+  PARK_SMALL: 'Green Space',
+  BUS_STATION: 'Transit Stop',
+  EDU_HIGH: 'Education Facility',
+  HEALTH_HOSPITAL: 'Health Clinic',
+  SMART_TRAFFIC_LIGHT: 'Mobility Infrastructure',
 }
 const ZONE_TYPES = Object.keys(ZONE_DISPLAY)
 
@@ -126,6 +129,10 @@ export default function App() {
           <ExplanationDrawer />
           <StepSummaryPanel />
           <NotificationBanner connected={connection.isConnected} state={connection.connectionState} />
+          {/* CivicOps panels */}
+          <WorkQueue />
+          <PlanningMemo />
+          <BudgetPanel />
         </>
       )}
     </div>

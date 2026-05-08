@@ -11,10 +11,10 @@ interface LeftSidebarProps {
 }
 
 const TABS = [
-  { id: 'metrics', icon: BarChart3, label: 'Metrics' },
-  { id: 'ai', icon: MessageSquare, label: 'AI Insights' },
-  { id: 'actions', icon: Layers, label: 'Actions' },
-  { id: 'placement', icon: Crosshair, label: 'Place Zones' },
+  { id: 'metrics', icon: BarChart3, label: 'Service Gaps' },
+  { id: 'ai', icon: MessageSquare, label: 'Planning AI' },
+  { id: 'actions', icon: Layers, label: 'Dept. Tasks' },
+  { id: 'placement', icon: Crosshair, label: 'Place Infra' },
 ] as const
 
 type TabId = typeof TABS[number]['id']

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Building2, X } from 'lucide-react'
+import { Briefcase, MapPin, X } from 'lucide-react'
 import { useCityStore } from '@/stores/cityStore'
 import type { CityProfile } from '@/types/city.types'
 import { SandboxBuilder } from './SandboxBuilder'
@@ -15,24 +15,37 @@ export function LandingScreen({ onEnter }: Props) {
 
   return (
     <div style={{ position: 'relative', height: '100vh', overflow: 'hidden', background: '#0D1117' }}>
-      <AnimatedCityscape />
+      <GridBackground />
       <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', padding: 24 }}>
         <motion.div
           className="glass-panel"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ width: 'min(520px, 100%)', borderRadius: 16, padding: 36, textAlign: 'center' }}
+          style={{ width: 'min(520px, 100%)', borderRadius: 16, padding: 40, textAlign: 'center' }}
         >
-          <Logo large />
-          <p style={{ margin: '16px 0 28px', color: 'var(--color-text-secondary)', fontSize: 20, fontStyle: 'italic' }}>
-            Plan the cities of tomorrow, today.
+          <CivicOpsLogo large />
+          <p style={{ margin: '12px 0 6px', color: 'var(--color-text-secondary)', fontSize: 15 }}>
+            Internal AI planning dashboard for city infrastructure teams.
           </p>
-          <button className="primary-cta" onClick={() => setGalleryOpen(true)}>Explore a Real City</button>
-          <button className="secondary-cta" onClick={() => setSandboxOpen(true)}>Build a New City</button>
+          <p style={{ margin: '0 0 28px', color: 'var(--color-text-muted)', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>
+            Public Works · Transit · Parks · Housing · Public Health
+          </p>
+          <button className="primary-cta" onClick={() => setGalleryOpen(true)}>
+            <MapPin size={15} style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }} />
+            Load District Data
+          </button>
+          <button className="secondary-cta" onClick={() => setSandboxOpen(true)}>
+            <Briefcase size={15} style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }} />
+            New Planning Session
+          </button>
+          <div style={{ marginTop: 24, padding: '12px 16px', background: 'rgba(46,134,193,0.08)', borderRadius: 8, border: '1px solid rgba(46,134,193,0.2)', textAlign: 'left' }}>
+            <div style={{ color: 'var(--color-text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>For authorized staff only</div>
+            <div style={{ color: 'var(--color-text-secondary)', fontSize: 12 }}>This tool is for internal use by city planning departments. All sessions are logged for audit purposes.</div>
+          </div>
         </motion.div>
       </div>
       <AnimatePresence>
-        {galleryOpen && <CityGallery onClose={() => setGalleryOpen(false)} onEnter={onEnter} />}
+        {galleryOpen && <DistrictGallery onClose={() => setGalleryOpen(false)} onEnter={onEnter} />}
         {sandboxOpen && <SandboxOverlay onClose={() => setSandboxOpen(false)} onGenerated={onEnter} />}
       </AnimatePresence>
       <style>{`
@@ -42,23 +55,25 @@ export function LandingScreen({ onEnter }: Props) {
           border-radius: var(--radius-md);
           margin-top: 12px;
           font-weight: 700;
-          font-size: 16px;
+          font-size: 15px;
           transition: var(--transition-fast);
+          cursor: pointer;
         }
         .primary-cta {
           border: 1px solid var(--color-brand-primary);
           background: var(--color-brand-primary);
           color: white;
         }
+        .primary-cta:hover { opacity: 0.88; }
         .secondary-cta {
-          border: 1px solid var(--color-brand-accent);
+          border: 1px solid var(--color-border-subtle);
           background: transparent;
-          color: var(--color-brand-accent);
+          color: var(--color-text-secondary);
         }
-        .city-gallery-card:hover {
-          transform: translateY(-4px);
+        .secondary-cta:hover { border-color: var(--color-brand-accent); color: var(--color-brand-accent); }
+        .district-card:hover {
           border-color: var(--color-border-active);
-          box-shadow: var(--shadow-lg);
+          box-shadow: var(--shadow-md);
         }
       `}</style>
     </div>
@@ -68,32 +83,59 @@ export function LandingScreen({ onEnter }: Props) {
 function SandboxOverlay({ onClose, onGenerated }: { onClose: () => void; onGenerated: () => void }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 110, overflow: 'auto', padding: 32, background: 'rgba(13,17,23,0.9)', backdropFilter: 'blur(8px)' }}>
-      <button className="icon-btn" onClick={onClose} style={{ position: 'fixed', top: 20, right: 20 }} aria-label="Close sandbox builder"><X size={18} /></button>
+      <button className="icon-btn" onClick={onClose} style={{ position: 'fixed', top: 20, right: 20 }} aria-label="Close"><X size={18} /></button>
       <SandboxBuilder onGenerated={() => { onClose(); onGenerated() }} />
     </motion.div>
   )
 }
 
-export function Logo({ large = false }: { large?: boolean }) {
+export function CivicOpsLogo({ large = false }: { large?: boolean }) {
+  const size = large ? 40 : 22
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
-      <svg width={large ? 64 : 28} height={large ? 48 : 24} viewBox="0 0 64 48" aria-hidden="true">
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+      <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
         <defs>
-          <linearGradient id="urbanmind-logo" x1="0" x2="1">
+          <linearGradient id="civicops-logo" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#2E86C1" />
             <stop offset="100%" stopColor="#17A589" />
           </linearGradient>
         </defs>
-        <path d="M5 43V25h8V11h10v32h6V18h9v25h5V6h12v37h4v4H2v-4h3z" fill="url(#urbanmind-logo)" />
+        {/* City hall dome */}
+        <rect x="4" y="32" width="32" height="4" rx="1" fill="url(#civicops-logo)" opacity="0.7" />
+        <rect x="8" y="20" width="24" height="12" rx="1" fill="url(#civicops-logo)" opacity="0.85" />
+        <rect x="12" y="14" width="16" height="6" rx="1" fill="url(#civicops-logo)" />
+        <path d="M20 6 L28 14 L12 14 Z" fill="url(#civicops-logo)" />
+        <rect x="16" y="24" width="4" height="8" rx="0.5" fill="rgba(255,255,255,0.3)" />
+        <rect x="22" y="24" width="4" height="8" rx="0.5" fill="rgba(255,255,255,0.3)" />
+        {/* Grid dots */}
+        <circle cx="6" cy="10" r="1.5" fill="var(--color-brand-accent)" opacity="0.6" />
+        <circle cx="34" cy="10" r="1.5" fill="var(--color-brand-accent)" opacity="0.6" />
+        <circle cx="6" cy="18" r="1" fill="var(--color-brand-accent)" opacity="0.4" />
+        <circle cx="34" cy="18" r="1" fill="var(--color-brand-accent)" opacity="0.4" />
       </svg>
-      <strong style={{ color: 'white', fontSize: large ? 48 : 16, fontWeight: 800, letterSpacing: 0 }}>
-        UrbanMind AI
-      </strong>
+      <div style={{ textAlign: 'left' }}>
+        <strong style={{ color: 'white', fontSize: large ? 28 : 14, fontWeight: 800, letterSpacing: -0.3, display: 'block', lineHeight: 1 }}>
+          CivicOps
+        </strong>
+        {large && (
+          <span style={{ color: 'var(--color-text-muted)', fontSize: 13, fontWeight: 500, letterSpacing: 1, textTransform: 'uppercase' }}>
+            Planner
+          </span>
+        )}
+        {!large && (
+          <span style={{ color: 'var(--color-text-muted)', fontSize: 10, fontWeight: 600, letterSpacing: 0.5 }}>
+            Planner
+          </span>
+        )}
+      </div>
     </div>
   )
 }
 
-function CityGallery({ onClose, onEnter }: { onClose: () => void; onEnter: () => void }) {
+/** Keep old Logo export for any remaining references */
+export const Logo = CivicOpsLogo
+
+function DistrictGallery({ onClose, onEnter }: { onClose: () => void; onEnter: () => void }) {
   const cities = useCityStore((state) => state.cities)
   const selectCity = useCityStore((state) => state.selectCity)
 
@@ -108,49 +150,49 @@ function CityGallery({ onClose, onEnter }: { onClose: () => void; onEnter: () =>
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      style={{ position: 'fixed', inset: 0, zIndex: 100, overflow: 'auto', padding: 32, background: 'rgba(13,17,23,0.86)', backdropFilter: 'blur(8px)' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 100, overflow: 'auto', padding: 32, background: 'rgba(13,17,23,0.88)', backdropFilter: 'blur(8px)' }}
     >
-      <button className="icon-btn" onClick={onClose} style={{ position: 'fixed', top: 20, right: 20 }} aria-label="Close city gallery"><X size={18} /></button>
-      <div style={{ width: 'min(960px, 100%)', margin: '48px auto', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 18 }}>
-        <button className="city-gallery-card" onClick={() => { onClose(); }} style={{ width: '100%', textAlign: 'left', border: '1px dashed var(--color-brand-accent)', borderRadius: 8, overflow: 'hidden', background: 'var(--color-bg-panel)', transition: 'var(--transition-med)', color: 'white', padding: 18, minHeight: 260 }}>
-          <Building2 size={28} />
-          <h3>New Sandbox City</h3>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>Use the Build a New City option on the landing screen to generate procedural terrain.</p>
-        </button>
-        {cities.map((city) => (
-          <button
-            key={city.id}
-            className="city-gallery-card"
-            onClick={() => chooseCity(city)}
-            style={{ width: '100%', textAlign: 'left', border: '1px solid var(--color-border-subtle)', borderRadius: 8, overflow: 'hidden', background: 'var(--color-bg-panel)', transition: 'var(--transition-med)', color: 'white', padding: 0 }}
-          >
-            <img src={thumbnailUrl(city)} alt="" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block', background: 'var(--color-bg-card)' }} />
-            <div style={{ padding: 14 }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{city.name}</h3>
-              <p style={{ margin: '4px 0 8px', fontSize: 13, color: 'var(--color-text-secondary)' }}>{city.country} · {formatPopulation(city.population_current)}</p>
-              <p style={{ minHeight: 36, margin: 0, fontSize: 12, lineHeight: 1.45, color: 'var(--color-text-muted)' }}>{city.key_planning_challenge}</p>
-              <div style={{ marginTop: 12, color: 'var(--color-text-accent)', fontSize: 12, fontWeight: 700 }}>Plan This City</div>
-            </div>
-          </button>
-        ))}
+      <button className="icon-btn" onClick={onClose} style={{ position: 'fixed', top: 20, right: 20 }} aria-label="Close"><X size={18} /></button>
+      <div style={{ width: 'min(960px, 100%)', margin: '48px auto' }}>
+        <h2 style={{ color: 'white', fontSize: 22, fontWeight: 700, marginBottom: 6 }}>Select District</h2>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: 13, marginBottom: 24 }}>Choose a city district to load its infrastructure data and begin planning analysis.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16 }}>
+          {cities.map((city) => (
+            <button
+              key={city.id}
+              className="district-card"
+              onClick={() => chooseCity(city)}
+              style={{ width: '100%', textAlign: 'left', border: '1px solid var(--color-border-subtle)', borderRadius: 8, overflow: 'hidden', background: 'var(--color-bg-panel)', transition: 'var(--transition-med)', color: 'white', padding: 0, cursor: 'pointer' }}
+            >
+              <img src={thumbnailUrl(city)} alt="" style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block', background: 'var(--color-bg-card)' }} />
+              <div style={{ padding: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{city.name}</h3>
+                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'rgba(46,134,193,0.15)', color: 'var(--color-brand-primary)', fontWeight: 700, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+                    Active
+                  </span>
+                </div>
+                <p style={{ margin: '0 0 6px', fontSize: 12, color: 'var(--color-text-secondary)' }}>{city.country} · {formatPopulation(city.population_current)}</p>
+                <p style={{ margin: 0, fontSize: 11, lineHeight: 1.45, color: 'var(--color-text-muted)' }}>{city.key_planning_challenge}</p>
+                <div style={{ marginTop: 12, color: 'var(--color-brand-primary)', fontSize: 12, fontWeight: 700 }}>Load District Data →</div>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
     </motion.div>
   )
 }
 
-function AnimatedCityscape() {
-  const buildings = Array.from({ length: 44 }, (_, i) => ({ x: i * 34, h: 80 + ((i * 37) % 180), w: 22 + ((i * 13) % 28) }))
+function GridBackground() {
   return (
-    <svg style={{ position: 'absolute', inset: 'auto 0 0 0', width: '140%', height: '62%', opacity: 0.55, animation: 'skylineDrift 40s linear infinite' }} viewBox="0 0 1500 500" preserveAspectRatio="none">
-      <rect width="1500" height="500" fill="transparent" />
-      {buildings.map((b, i) => (
-        <g key={i}>
-          <rect x={b.x} y={500 - b.h} width={b.w} height={b.h} fill={i % 3 === 0 ? '#111827' : '#1F2937'} />
-          {Array.from({ length: Math.floor(b.h / 24) }, (_, j) => (
-            <rect key={j} x={b.x + 6} y={500 - b.h + 10 + j * 22} width="5" height="8" fill="#2E86C1" style={{ animation: `windowGlow ${2 + (i % 4)}s ease-in-out infinite` }} />
-          ))}
-        </g>
-      ))}
+    <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.06 }} xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#2E86C1" strokeWidth="0.5" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#grid)" />
     </svg>
   )
 }
@@ -158,7 +200,7 @@ function AnimatedCityscape() {
 function thumbnailUrl(city: CityProfile): string {
   const token = import.meta.env.VITE_MAPBOX_TOKEN
   if (!token) return ''
-  return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/${city.center_lng},${city.center_lat},${city.default_zoom}/280x160@2x?access_token=${token}`
+  return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/${city.center_lng},${city.center_lat},${city.default_zoom}/280x140@2x?access_token=${token}`
 }
 
 function formatPopulation(value: number) {
