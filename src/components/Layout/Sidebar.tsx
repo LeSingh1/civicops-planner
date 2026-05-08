@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { BarChart3, ClipboardList, DollarSign, FileText, Pause, RotateCcw, Undo2 } from 'lucide-react'
+import { Pause, RotateCcw, Undo2 } from 'lucide-react'
 import * as d3 from 'd3'
 import { useCityStore } from '@/stores/cityStore'
 import { scenarioColors, scenarioLabels, useScenarioStore } from '@/stores/scenarioStore'
@@ -10,14 +10,6 @@ import { getZoneColor } from '@/utils/colorUtils'
 
 const layers = ['Zones', 'Roads', '3D Buildings', 'Population Heatmap', 'Flood Risk', 'Equity Overlay', 'Smart Infrastructure', 'Disaster Risk', 'Satellite Base']
 const overrideZones = ['RES_LOW_DETACHED', 'RES_MED_APARTMENT', 'RES_HIGH_TOWER', 'COM_SMALL_SHOP', 'COM_OFFICE_PLAZA', 'IND_WAREHOUSE', 'BUS_STATION', 'HEALTH_HOSPITAL', 'EDU_HIGH', 'PARK_SMALL', 'SOLAR_FARM', 'SMART_TRAFFIC_LIGHT']
-
-const GAP_RECOMMENDATIONS = [
-  { name: 'South Emergency Gap Clinic', dept: 'Public Health', cost: '$18M', residents: 22000, impact: '+24% Emergency Access', color: '#E74C3C' },
-  { name: 'East Education District School', dept: 'Education', cost: '$32M', residents: 15400, impact: '+31% School Access', color: '#3498DB' },
-  { name: 'North Transit Hub', dept: 'Transit', cost: '$45M', residents: 38000, impact: '+18% Transit Coverage', color: '#9B59B6' },
-  { name: 'Central Green Corridor', dept: 'Parks', cost: '$14M', residents: 9200, impact: '+12% Green Space', color: '#27AE60' },
-  { name: 'New Housing Community Center', dept: 'Housing', cost: '$22M', residents: 11800, impact: '+19% Community Access', color: '#E67E22' },
-]
 
 export function Sidebar({ wsSend }: { wsSend: (payload: unknown) => void }) {
   const city = useCityStore((state) => state.selectedCity)
@@ -34,53 +26,21 @@ export function Sidebar({ wsSend }: { wsSend: (payload: unknown) => void }) {
   const openDashboard = useUIStore((state) => state.openDashboard)
   const setOverrideZone = useUIStore((state) => state.setOverrideZone)
   const openDrawer = useUIStore((state) => state.openDrawer)
-  const openWorkQueue = useUIStore((state) => state.openWorkQueue)
-  const openBudget = useUIStore((state) => state.openBudget)
-  const workTasks = useUIStore((state) => state.workTasks)
-  const pendingCount = workTasks.filter((t) => t.status === 'Pending').length
 
   const tabMetrics = metricCards(activeTab, metrics)
 
   return (
     <aside style={{ position: 'fixed', left: 0, top: 56, width: 320, height: 'calc(100vh - 120px)', zIndex: 40, background: 'var(--color-bg-sidebar)', overflowY: 'auto', borderRight: '1px solid var(--color-border-subtle)', padding: 16 }}>
-
-      {/* District header */}
       <section style={{ display: 'flex', gap: 12, alignItems: 'center', paddingBottom: 16, borderBottom: '1px solid var(--color-border-subtle)' }}>
-        <img src={city ? thumbnailUrl(city) : ''} alt="" style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover', background: 'var(--color-bg-card)' }} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-brand-accent)' }} />
-            <span style={{ color: 'var(--color-text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8 }}>Active District</span>
-          </div>
-          <h2 style={{ margin: 0, color: 'white', fontSize: 16, fontWeight: 700 }}>{city?.name}</h2>
-          <p style={{ margin: '2px 0 0', color: 'var(--color-text-secondary)', fontSize: 12 }}>{city?.country} · {formatCompact(city?.population_current ?? 0)} residents</p>
+        <img src={city ? thumbnailUrl(city) : ''} alt="" style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', background: 'var(--color-bg-card)' }} />
+        <div>
+          <h2 style={{ margin: 0, color: 'white', fontSize: 18, fontWeight: 700 }}>{city?.name}</h2>
+          <p style={{ margin: '4px 0', color: 'var(--color-text-secondary)', fontSize: 13 }}>{city?.country}</p>
+          <strong style={{ color: 'var(--color-text-accent)', fontSize: 14 }}>{formatCompact(city?.population_current ?? 0)} residents</strong>
         </div>
       </section>
 
-      {/* Quick actions */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '14px 0', borderBottom: '1px solid var(--color-border-subtle)' }}>
-        <button
-          onClick={openWorkQueue}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', border: '1px solid var(--color-border-subtle)', borderRadius: 7, background: 'var(--color-bg-panel)', color: 'var(--color-text-secondary)', fontSize: 12, fontWeight: 600, cursor: 'pointer', position: 'relative' }}
-        >
-          <ClipboardList size={14} />
-          Work Queue
-          {pendingCount > 0 && (
-            <span style={{ position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: '50%', background: '#E74C3C', color: 'white', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {pendingCount}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={openBudget}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', border: '1px solid var(--color-border-subtle)', borderRadius: 7, background: 'var(--color-bg-panel)', color: 'var(--color-text-secondary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-        >
-          <DollarSign size={14} />
-          Budget Impact
-        </button>
-      </div>
-
-      <CollapsibleSection title="Analysis Scenario">
+      <CollapsibleSection title="Scenario">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {(Object.keys(scenarioLabels) as Array<keyof typeof scenarioLabels>).map((scenario) => (
             <button
@@ -97,30 +57,10 @@ export function Sidebar({ wsSend }: { wsSend: (payload: unknown) => void }) {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Service Gaps">
-        <div style={{ display: 'grid', gap: 8 }}>
-          {GAP_RECOMMENDATIONS.map((gap) => (
-            <div key={gap.name} style={{ border: `1px solid ${gap.color}33`, borderRadius: 8, background: 'var(--color-bg-panel)', padding: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6, marginBottom: 5 }}>
-                <span style={{ color: 'white', fontSize: 12, fontWeight: 600, lineHeight: 1.3 }}>{gap.name}</span>
-                <span style={{ flexShrink: 0, height: 18, padding: '0 7px', borderRadius: 3, background: `${gap.color}22`, color: gap.color, fontSize: 10, fontWeight: 700, display: 'inline-flex', alignItems: 'center' }}>{gap.dept}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--color-text-muted)' }}>
-                <span>{gap.residents.toLocaleString()} residents</span>
-                <span style={{ color: 'var(--color-brand-accent)', fontWeight: 600 }}>{gap.impact}</span>
-              </div>
-              <div style={{ marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: gap.color, fontSize: 13, fontWeight: 700 }}>{gap.cost}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Operational Metrics">
+      <CollapsibleSection title="Metrics">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4, marginBottom: 12 }}>
           {(['overview', 'mobility', 'economy', 'environment'] as const).map((tab) => (
-            <button key={tab} onClick={() => setActiveTab(tab)} style={{ height: 28, border: 0, borderBottom: activeTab === tab ? '2px solid var(--color-brand-secondary)' : '2px solid transparent', background: 'transparent', color: activeTab === tab ? 'white' : 'var(--color-text-muted)', fontSize: 11, textTransform: 'capitalize', cursor: 'pointer' }}>{tab}</button>
+            <button key={tab} onClick={() => setActiveTab(tab)} style={{ height: 28, border: 0, borderBottom: activeTab === tab ? '2px solid var(--color-brand-secondary)' : '2px solid transparent', background: 'transparent', color: activeTab === tab ? 'white' : 'var(--color-text-muted)', fontSize: 11, textTransform: 'capitalize' }}>{tab}</button>
           ))}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -128,20 +68,20 @@ export function Sidebar({ wsSend }: { wsSend: (payload: unknown) => void }) {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Population Trend">
-        <button onClick={openDashboard} style={{ width: '100%', border: '1px solid var(--color-border-subtle)', borderRadius: 8, background: 'var(--color-bg-panel)', padding: 10, cursor: 'pointer' }}>
+      <CollapsibleSection title="Population">
+        <button onClick={openDashboard} style={{ width: '100%', border: '1px solid var(--color-border-subtle)', borderRadius: 8, background: 'var(--color-bg-panel)', padding: 10 }}>
           <MiniLine data={history.map((item) => item.pop_total)} />
         </button>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Infrastructure Coverage">
+      <CollapsibleSection title="Infrastructure">
         {[
           ['Transit Hubs', metrics?.mobility_transit_coverage ?? 0],
           ['Hospitals', metrics?.equity_hosp_coverage ?? 0],
           ['Schools', metrics?.equity_school_access ?? 0],
-          ['Power Grid', metrics?.infra_power_load ?? 0],
-          ['Water Supply', metrics?.infra_water_capacity ?? 0],
-          ['Emergency Response', Math.max(0, 100 - (metrics?.safety_response_time ?? 8) * 10)],
+          ['Power Plants', metrics?.infra_power_load ?? 0],
+          ['Water Plants', metrics?.infra_water_capacity ?? 0],
+          ['Fire Stations', Math.max(0, 100 - (metrics?.safety_response_time ?? 8) * 10)],
         ].map(([label, value]) => <CapacityBar key={label as string} label={label as string} value={Number(value)} />)}
       </CollapsibleSection>
 
@@ -159,8 +99,8 @@ export function Sidebar({ wsSend }: { wsSend: (payload: unknown) => void }) {
       </CollapsibleSection>
 
       {isPaused && (
-        <CollapsibleSection title="Infrastructure Placement">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-brand-warning)', fontSize: 12, marginBottom: 10 }}><Pause size={14} /> Analysis paused — place infrastructure</div>
+        <CollapsibleSection title="Manual Override">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-brand-warning)', fontSize: 12, marginBottom: 10 }}><Pause size={14} /> Simulation paused</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 6 }}>
             {overrideZones.map((zone) => <button key={zone} title={`${zone} · min SPS 4.0`} onClick={() => setOverrideZone(zone)} style={{ width: 40, height: 40, borderRadius: 8, border: '1px solid var(--color-border-subtle)', background: getZoneColor(zone), color: 'white', fontSize: 10, fontWeight: 800 }}>{zone.slice(0, 2)}</button>)}
           </div>
@@ -169,14 +109,14 @@ export function Sidebar({ wsSend }: { wsSend: (payload: unknown) => void }) {
         </CollapsibleSection>
       )}
 
-      <CollapsibleSection title="AI Plan Recommendations">
+      <CollapsibleSection title="AI Decisions">
         <div style={{ display: 'grid', gap: 8 }}>
-          {actions.length === 0 && <p style={{ color: 'var(--color-text-muted)', fontSize: 12 }}>Run analysis to generate AI infrastructure recommendations.</p>}
+          {actions.length === 0 && <p style={{ color: 'var(--color-text-muted)', fontSize: 12 }}>No agent decisions yet.</p>}
           {actions.map((action, index) => (
-            <button key={`${action.x}-${action.y}-${index}`} onClick={() => openDrawer({ ...action, year: metrics?.year ?? 0, explanation_text: 'Loading...', metrics_delta: {}, surrounding_context: 'Nearby parcels, service access, and growth demand' })} style={{ textAlign: 'left', border: '1px solid var(--color-border-subtle)', borderRadius: 8, background: 'var(--color-bg-panel)', padding: 10, color: 'white', cursor: 'pointer' }}>
+            <button key={`${action.x}-${action.y}-${index}`} onClick={() => openDrawer({ ...action, year: metrics?.year ?? 0, explanation_text: 'Loading...', metrics_delta: {}, surrounding_context: 'Nearby parcels, service access, and growth demand' })} style={{ textAlign: 'left', border: '1px solid var(--color-border-subtle)', borderRadius: 8, background: 'var(--color-bg-panel)', padding: 10, color: 'white' }}>
               <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: getZoneColor(action.zone_type_id), marginRight: 8 }} />
               <strong style={{ fontSize: 12 }}>{action.zone_display_name}</strong>
-              <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--color-text-muted)' }}>Plan Year {metrics?.year ?? 0} · Coverage {action.sps_score.toFixed(1)}</p>
+              <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--color-text-muted)' }}>Year {metrics?.year ?? 0} · SPS {action.sps_score.toFixed(1)}</p>
             </button>
           ))}
         </div>

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Briefcase, MapPin, X } from 'lucide-react'
+import { X, Plus } from 'lucide-react'
 import { useCityStore } from '@/stores/cityStore'
 import type { CityProfile } from '@/types/city.types'
 import { SandboxBuilder } from './SandboxBuilder'
@@ -10,199 +10,304 @@ interface Props {
 }
 
 export function LandingScreen({ onEnter }: Props) {
-  const [galleryOpen, setGalleryOpen] = useState(false)
   const [sandboxOpen, setSandboxOpen] = useState(false)
+  const [showMoreCities, setShowMoreCities] = useState(false)
+  const cities = useCityStore((state) => state.cities)
+  const selectCity = useCityStore((state) => state.selectCity)
+  const mainCities = useMemo(
+    () => ['fremon', 'fremont', 'san_jose'].map((id) => cities.find((city) => city.id === id)).filter(Boolean) as CityProfile[],
+    [cities],
+  )
+  const moreCities = useMemo(
+    () => cities.filter((city) => !['fremon', 'fremont', 'san_jose'].includes(city.id)),
+    [cities],
+  )
+
+  const chooseCity = (city: CityProfile) => {
+    selectCity(city)
+    onEnter()
+  }
 
   return (
-    <div style={{ position: 'relative', height: '100vh', overflow: 'hidden', background: '#0D1117' }}>
-      <GridBackground />
-      <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', padding: 24 }}>
+    <div className="relative h-screen overflow-auto noise-overlay" style={{ background: 'var(--color-bg-app)' }}>
+      <div className="relative z-10 max-w-6xl mx-auto px-8 py-14">
+        {/* Hero row */}
         <motion.div
-          className="glass-panel"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ width: 'min(520px, 100%)', borderRadius: 16, padding: 40, textAlign: 'center' }}
+          initial="hidden"
+          animate="visible"
+          variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1 } } }}
+          className="flex items-start gap-12 mb-14"
         >
-          <CivicOpsLogo large />
-          <p style={{ margin: '12px 0 6px', color: 'var(--color-text-secondary)', fontSize: 15 }}>
-            Internal AI planning dashboard for city infrastructure teams.
-          </p>
-          <p style={{ margin: '0 0 28px', color: 'var(--color-text-muted)', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>
-            Public Works · Transit · Parks · Housing · Public Health
-          </p>
-          <button className="primary-cta" onClick={() => setGalleryOpen(true)}>
-            <MapPin size={15} style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }} />
-            Load District Data
-          </button>
-          <button className="secondary-cta" onClick={() => setSandboxOpen(true)}>
-            <Briefcase size={15} style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }} />
-            New Planning Session
-          </button>
-          <div style={{ marginTop: 24, padding: '12px 16px', background: 'rgba(46,134,193,0.08)', borderRadius: 8, border: '1px solid rgba(46,134,193,0.2)', textAlign: 'left' }}>
-            <div style={{ color: 'var(--color-text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>For authorized staff only</div>
-            <div style={{ color: 'var(--color-text-secondary)', fontSize: 12 }}>This tool is for internal use by city planning departments. All sessions are logged for audit purposes.</div>
-          </div>
+          {/* Hero panel */}
+          <motion.div
+            variants={{ hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } } }}
+            className="relative rounded-2xl p-8 shrink-0 w-72"
+            style={{ background: 'var(--color-bg-panel)', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-lg)' }}
+          >
+            <ScrewCorners />
+            <div style={{ position: 'absolute', top: 14, right: 28, display: 'flex', gap: 4 }}>
+              {[0, 1, 2].map((i) => (
+                <div key={i} style={{ width: 3, height: 20, borderRadius: 99, background: 'var(--color-bg-hover)', boxShadow: 'inset 1px 1px 2px rgba(0,0,0,0.12)' }} />
+              ))}
+            </div>
+
+            <div className="mb-4"><CityIcon /></div>
+
+            <h1 className="font-display font-bold tracking-widest uppercase mb-1" style={{ fontSize: 28, color: 'var(--color-text-primary)', letterSpacing: '0.15em', lineHeight: 1.1, filter: 'drop-shadow(0 1px 0 #ffffff)' }}>
+              CivicOps
+            </h1>
+            <p className="font-mono text-[10px] tracking-widest uppercase mb-3" style={{ color: 'var(--color-text-muted)', letterSpacing: '0.25em' }}>
+              Internal planning dashboard
+            </p>
+
+            <div className="mb-4">
+              <span className="font-mono text-[9px] tracking-widest uppercase" style={{ color: '#00b894' }}>STAFF USE ONLY</span>
+            </div>
+
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: 12, lineHeight: 1.7 }} className="mb-6">
+              Internal AI planning dashboard for city infrastructure teams. Identify service gaps, route to departments, track tasks, and export planning memos.
+            </p>
+
+            <TactileButton variant="secondary" onClick={() => setSandboxOpen(true)} icon={<Plus size={13} />}>
+              New Planning Session
+            </TactileButton>
+
+            <div className="mt-4 flex items-center gap-1.5">
+              <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-accent-cyan)' }} />
+              <span className="font-mono text-[9px]" style={{ color: 'var(--color-text-muted)', letterSpacing: '0.15em' }}>
+                {cities.length} DISTRICTS LOADED · INTERNAL TOOLS
+              </span>
+            </div>
+          </motion.div>
+
+          {/* City grid */}
+          <motion.div
+            variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.06, delayChildren: 0.15 } } }}
+            className="flex-1 grid gap-6"
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))' }}
+          >
+            {mainCities.map((city) => (
+              <CityCard key={city.id} city={city} onSelect={chooseCity} />
+            ))}
+            {showMoreCities && moreCities.map((city) => (
+              <CityCard key={city.id} city={city} onSelect={chooseCity} compact />
+            ))}
+            {moreCities.length > 0 && (
+              <button
+                onClick={() => setShowMoreCities((v) => !v)}
+                className="rounded-xl border px-4 py-3 text-left text-sm font-semibold"
+                style={{ borderColor: 'var(--color-border-subtle)', color: 'var(--color-text-secondary)', background: 'var(--color-bg-card)' }}
+              >
+                {showMoreCities ? 'Hide More Cities' : `More Cities (${moreCities.length})`}
+              </button>
+            )}
+          </motion.div>
         </motion.div>
       </div>
+
       <AnimatePresence>
-        {galleryOpen && <DistrictGallery onClose={() => setGalleryOpen(false)} onEnter={onEnter} />}
-        {sandboxOpen && <SandboxOverlay onClose={() => setSandboxOpen(false)} onGenerated={onEnter} />}
+        {sandboxOpen && (
+          <SandboxOverlay onClose={() => setSandboxOpen(false)} onGenerated={onEnter} />
+        )}
       </AnimatePresence>
-      <style>{`
-        .primary-cta, .secondary-cta {
-          width: 100%;
-          height: 46px;
-          border-radius: var(--radius-md);
-          margin-top: 12px;
-          font-weight: 700;
-          font-size: 15px;
-          transition: var(--transition-fast);
-          cursor: pointer;
-        }
-        .primary-cta {
-          border: 1px solid var(--color-brand-primary);
-          background: var(--color-brand-primary);
-          color: white;
-        }
-        .primary-cta:hover { opacity: 0.88; }
-        .secondary-cta {
-          border: 1px solid var(--color-border-subtle);
-          background: transparent;
-          color: var(--color-text-secondary);
-        }
-        .secondary-cta:hover { border-color: var(--color-brand-accent); color: var(--color-brand-accent); }
-        .district-card:hover {
-          border-color: var(--color-border-active);
-          box-shadow: var(--shadow-md);
-        }
-      `}</style>
     </div>
+  )
+}
+
+function TactileButton({
+  children,
+  onClick,
+  variant,
+  icon,
+}: {
+  children: React.ReactNode
+  onClick: () => void
+  variant: 'primary' | 'secondary'
+  icon?: React.ReactNode
+}) {
+  const isPrimary = variant === 'primary'
+  return (
+    <motion.button
+      onClick={onClick}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.98, y: 2 }}
+      className="relative w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-display font-bold text-sm tracking-widest uppercase transition-all"
+      style={{
+        background: isPrimary ? 'var(--color-accent-cyan)' : 'var(--color-bg-panel)',
+        color: isPrimary ? '#ffffff' : 'var(--color-text-primary)',
+        border: isPrimary ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--color-border-subtle)',
+        boxShadow: isPrimary
+          ? '4px 4px 8px rgba(166,50,60,0.35), -2px -2px 6px rgba(255,100,110,0.3)'
+          : 'var(--shadow-sm)',
+        letterSpacing: '0.08em',
+      }}
+    >
+      {icon}
+      {children}
+    </motion.button>
+  )
+}
+
+function CityCard({ city, onSelect, compact = false }: { city: CityProfile; onSelect: (c: CityProfile) => void; compact?: boolean }) {
+  const typeLabel = city.id === 'fremon' ? 'Generated Future City' : 'Real City'
+  const populationLabel = city.population_current.toLocaleString()
+  return (
+    <motion.button
+      variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } } }}
+      onClick={() => onSelect(city)}
+      whileHover={{ y: -4, boxShadow: '12px 12px 24px #babecc, -12px -12px 24px #ffffff' }}
+      whileTap={{ scale: 0.98, y: 0 }}
+      className="group text-left rounded-xl overflow-hidden transition-all relative"
+      style={{
+        background: 'var(--color-bg-panel)',
+        border: '1px solid var(--color-border-subtle)',
+        boxShadow: 'var(--shadow-md)',
+      }}
+    >
+      {/* City thumbnail */}
+      <div
+        className={`relative flex items-end p-5 ${compact ? 'h-24' : 'h-32'}`}
+        style={{
+          background: cityColorLight(city.id),
+        }}
+      >
+        <div className="absolute top-2 right-3 flex gap-1">
+          {[0, 1, 2].map((i) => (
+            <div key={i} style={{ width: 2, height: 14, borderRadius: 99, background: 'var(--color-border-subtle)', boxShadow: 'inset 1px 1px 1px rgba(0,0,0,0.1)' }} />
+          ))}
+        </div>
+        <h3
+          className="relative font-display font-bold text-lg leading-tight"
+          style={{ color: 'var(--color-text-primary)', filter: 'drop-shadow(0 1px 0 #ffffff)' }}
+        >
+          {city.name}
+        </h3>
+      </div>
+
+      {/* City info */}
+      <div className="p-5">
+        <p className="font-mono text-[11px] mb-2" style={{ color: 'var(--color-text-muted)' }}>
+          {typeLabel} · {populationLabel} residents
+        </p>
+        <p className="text-xs leading-relaxed line-clamp-2" style={{ color: 'var(--color-text-secondary)', fontSize: 12, lineHeight: 1.6 }}>
+          {city.key_planning_challenge}
+        </p>
+        <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[10px] font-bold font-mono tracking-widest uppercase" style={{ color: 'var(--color-accent-cyan)', borderColor: 'var(--color-border-subtle)' }}>
+          SIMULATE →
+        </div>
+      </div>
+    </motion.button>
   )
 }
 
 function SandboxOverlay({ onClose, onGenerated }: { onClose: () => void; onGenerated: () => void }) {
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 110, overflow: 'auto', padding: 32, background: 'rgba(13,17,23,0.9)', backdropFilter: 'blur(8px)' }}>
-      <button className="icon-btn" onClick={onClose} style={{ position: 'fixed', top: 20, right: 20 }} aria-label="Close"><X size={18} /></button>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 overflow-auto p-8"
+      style={{ background: 'var(--color-bg-app)' }}
+    >
+      <button
+        onClick={onClose}
+        className="fixed top-5 right-5 flex items-center justify-center w-9 h-9 rounded-lg transition-all"
+        style={{
+          border: '1px solid var(--color-border-subtle)',
+          color: 'var(--color-text-secondary)',
+          background: 'var(--color-bg-panel)',
+          boxShadow: 'var(--shadow-sm)',
+        }}
+        aria-label="Close sandbox builder"
+      >
+        <X size={16} />
+      </button>
       <SandboxBuilder onGenerated={() => { onClose(); onGenerated() }} />
     </motion.div>
   )
 }
 
-export function CivicOpsLogo({ large = false }: { large?: boolean }) {
-  const size = large ? 40 : 22
+export function Logo({ large = false }: { large?: boolean }) {
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-      <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
-        <defs>
-          <linearGradient id="civicops-logo" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#2E86C1" />
-            <stop offset="100%" stopColor="#17A589" />
-          </linearGradient>
-        </defs>
-        {/* City hall dome */}
-        <rect x="4" y="32" width="32" height="4" rx="1" fill="url(#civicops-logo)" opacity="0.7" />
-        <rect x="8" y="20" width="24" height="12" rx="1" fill="url(#civicops-logo)" opacity="0.85" />
-        <rect x="12" y="14" width="16" height="6" rx="1" fill="url(#civicops-logo)" />
-        <path d="M20 6 L28 14 L12 14 Z" fill="url(#civicops-logo)" />
-        <rect x="16" y="24" width="4" height="8" rx="0.5" fill="rgba(255,255,255,0.3)" />
-        <rect x="22" y="24" width="4" height="8" rx="0.5" fill="rgba(255,255,255,0.3)" />
-        {/* Grid dots */}
-        <circle cx="6" cy="10" r="1.5" fill="var(--color-brand-accent)" opacity="0.6" />
-        <circle cx="34" cy="10" r="1.5" fill="var(--color-brand-accent)" opacity="0.6" />
-        <circle cx="6" cy="18" r="1" fill="var(--color-brand-accent)" opacity="0.4" />
-        <circle cx="34" cy="18" r="1" fill="var(--color-brand-accent)" opacity="0.4" />
-      </svg>
-      <div style={{ textAlign: 'left' }}>
-        <strong style={{ color: 'white', fontSize: large ? 28 : 14, fontWeight: 800, letterSpacing: -0.3, display: 'block', lineHeight: 1 }}>
-          CivicOps
-        </strong>
-        {large && (
-          <span style={{ color: 'var(--color-text-muted)', fontSize: 13, fontWeight: 500, letterSpacing: 1, textTransform: 'uppercase' }}>
-            Planner
-          </span>
-        )}
-        {!large && (
-          <span style={{ color: 'var(--color-text-muted)', fontSize: 10, fontWeight: 600, letterSpacing: 0.5 }}>
-            Planner
-          </span>
-        )}
-      </div>
+    <div className="inline-flex items-center gap-3">
+      <span
+        className="font-display font-bold tracking-widest uppercase"
+        style={{
+          fontSize: large ? 32 : 15,
+          color: 'var(--color-accent-cyan)',
+          letterSpacing: '0.12em',
+          filter: 'drop-shadow(0 1px 0 #ffffff)',
+        }}
+      >
+        CivicOps
+      </span>
+      <span className="font-mono text-xs tracking-widest" style={{ color: 'var(--color-text-muted)', letterSpacing: '0.2em' }}>
+        Planner
+      </span>
     </div>
   )
 }
 
-/** Keep old Logo export for any remaining references */
-export const Logo = CivicOpsLogo
+export const CivicOpsLogo = Logo
 
-function DistrictGallery({ onClose, onEnter }: { onClose: () => void; onEnter: () => void }) {
-  const cities = useCityStore((state) => state.cities)
-  const selectCity = useCityStore((state) => state.selectCity)
-
-  const chooseCity = (city: CityProfile) => {
-    selectCity(city)
-    onClose()
-    onEnter()
-  }
-
+function CityIcon() {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      style={{ position: 'fixed', inset: 0, zIndex: 100, overflow: 'auto', padding: 32, background: 'rgba(13,17,23,0.88)', backdropFilter: 'blur(8px)' }}
-    >
-      <button className="icon-btn" onClick={onClose} style={{ position: 'fixed', top: 20, right: 20 }} aria-label="Close"><X size={18} /></button>
-      <div style={{ width: 'min(960px, 100%)', margin: '48px auto' }}>
-        <h2 style={{ color: 'white', fontSize: 22, fontWeight: 700, marginBottom: 6 }}>Select District</h2>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 13, marginBottom: 24 }}>Choose a city district to load its infrastructure data and begin planning analysis.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16 }}>
-          {cities.map((city) => (
-            <button
-              key={city.id}
-              className="district-card"
-              onClick={() => chooseCity(city)}
-              style={{ width: '100%', textAlign: 'left', border: '1px solid var(--color-border-subtle)', borderRadius: 8, overflow: 'hidden', background: 'var(--color-bg-panel)', transition: 'var(--transition-med)', color: 'white', padding: 0, cursor: 'pointer' }}
-            >
-              <img src={thumbnailUrl(city)} alt="" style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block', background: 'var(--color-bg-card)' }} />
-              <div style={{ padding: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{city.name}</h3>
-                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'rgba(46,134,193,0.15)', color: 'var(--color-brand-primary)', fontWeight: 700, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                    Active
-                  </span>
-                </div>
-                <p style={{ margin: '0 0 6px', fontSize: 12, color: 'var(--color-text-secondary)' }}>{city.country} · {formatPopulation(city.population_current)}</p>
-                <p style={{ margin: 0, fontSize: 11, lineHeight: 1.45, color: 'var(--color-text-muted)' }}>{city.key_planning_challenge}</p>
-                <div style={{ marginTop: 12, color: 'var(--color-brand-primary)', fontSize: 12, fontWeight: 700 }}>Load District Data →</div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  )
-}
-
-function GridBackground() {
-  return (
-    <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.06 }} xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#2E86C1" strokeWidth="0.5" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#grid)" />
+    <svg width={52} height={42} viewBox="0 0 56 44" aria-hidden="true">
+      {/* Building silhouette — subtle drop shadow for depth */}
+      <path
+        d="M4 40V22h7V10h9v30h5V16h8v24h5V4h11v36h4v4H1v-4h3z"
+        fill="var(--color-accent-cyan)"
+        style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.15)) drop-shadow(0 -1px 0 rgba(255,255,255,0.4))' }}
+      />
     </svg>
   )
 }
 
-function thumbnailUrl(city: CityProfile): string {
-  const token = import.meta.env.VITE_MAPBOX_TOKEN
-  if (!token) return ''
-  return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/${city.center_lng},${city.center_lat},${city.default_zoom}/280x140@2x?access_token=${token}`
+function ScrewCorners() {
+  const positions: React.CSSProperties[] = [
+    { top: 10, left: 10 },
+    { top: 10, right: 10 },
+    { bottom: 10, left: 10 },
+    { bottom: 10, right: 10 },
+  ]
+  return (
+    <>
+      {positions.map((pos, i) => (
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            background: 'var(--color-border-subtle)',
+            boxShadow: 'inset 1px 1px 2px rgba(255,255,255,0.8), inset -1px -1px 2px rgba(0,0,0,0.12)',
+            ...pos,
+          }}
+        />
+      ))}
+    </>
+  )
 }
 
-function formatPopulation(value: number) {
-  return `${(value / 1_000_000).toFixed(value > 10_000_000 ? 1 : 2)}M residents`
+function cityColorLight(id: string): string {
+  const map: Record<string, string> = {
+    new_york:    '#c8d8e8',
+    los_angeles: '#e8d8c8',
+    tokyo:       '#c8d8e8',
+    lagos:       '#c8e8d0',
+    london:      '#d0d8e0',
+    sao_paulo:   '#d8c8e8',
+    singapore:   '#c8e8d8',
+    dubai:       '#e8dcc8',
+    mumbai:      '#e8d8c0',
+    fremont:     '#d8e8d0',
+    fremon:      '#e8e0d8',
+    san_jose:    '#d8d0e8',
+    sacramento:  '#e8e8d0',
+    stockton:    '#d0e8e0',
+    austin:      '#e8d8d8',
+    phoenix:     '#e8e0c8',
+  }
+  return map[id] ?? '#cdd5e0'
 }

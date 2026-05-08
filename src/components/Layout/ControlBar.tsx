@@ -1,11 +1,14 @@
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Download, FileText, Pause, Play, RotateCcw, Settings, SkipBack, SkipForward } from 'lucide-react'
-import { CivicOpsLogo } from '@/components/UI/LandingScreen'
+import { Columns2, Download, Pause, Play, RotateCcw, Settings, Share2, SkipBack, SkipForward } from 'lucide-react'
+import { Logo } from '@/components/UI/LandingScreen'
 import { useCityStore } from '@/stores/cityStore'
 import { useScenarioStore } from '@/stores/scenarioStore'
 import { useSimulationStore } from '@/stores/simulationStore'
 import { useSimulation } from '@/hooks/useSimulation'
 import { useUIStore } from '@/stores/uiStore'
+import { useNotification } from '@/hooks/useNotification'
+import { SettingsModal } from './SettingsModal'
 
 export function ControlBar({ connectionState }: { connectionState: string }) {
   const selectedCity = useCityStore((state) => state.selectedCity)
@@ -19,7 +22,10 @@ export function ControlBar({ connectionState }: { connectionState: string }) {
   const reset = useSimulationStore((state) => state.reset)
   const activeScenario = useScenarioStore((state) => state.activeScenario)
   const { start, pause, resume } = useSimulation()
-  const openMemo = useUIStore((state) => state.openMemo)
+  const isSplitScreen = useUIStore((state) => state.isSplitScreen)
+  const setSplitScreen = useUIStore((state) => state.setSplitScreen)
+  const notify = useNotification((s) => s.notify)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const play = () => {
     if (!selectedCity) return
@@ -36,111 +42,58 @@ export function ControlBar({ connectionState }: { connectionState: string }) {
   }
 
   return (
-    <header
-      style={{
-        position: 'fixed', top: 0, left: 0, right: 0, height: 56, zIndex: 50,
-        background: 'var(--color-bg-sidebar)', borderBottom: '1px solid var(--color-border-subtle)',
-      }}
-      onKeyDown={(event) => {
-        if (event.code === 'Space') { event.preventDefault(); play() }
-        if (event.key === 'ArrowLeft') step(-1)
-        if (event.key === 'ArrowRight') step(1)
-      }}
-    >
+    <header style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 56, zIndex: 50, background: 'var(--color-bg-sidebar)', borderBottom: '1px solid var(--color-border-subtle)' }} onKeyDown={(event) => {
+      if (event.code === 'Space') {
+        event.preventDefault()
+        play()
+      }
+      if (event.key === 'ArrowLeft') step(-1)
+      if (event.key === 'ArrowRight') step(1)
+    }}>
       <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', gap: 18 }}>
-        {/* Logo + city */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 280 }}>
-          <CivicOpsLogo />
-          <div style={{ borderLeft: '1px solid var(--color-border-subtle)', paddingLeft: 14 }}>
-            <div style={{ color: 'var(--color-text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase' }}>Active District</div>
-            <div style={{ color: 'var(--color-text-primary)', fontSize: 13, fontWeight: 600 }}>{selectedCity?.name ?? '—'}</div>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 260 }}>
+          <Logo />
+          <span style={{ color: 'var(--color-text-secondary)', fontSize: 14 }}>to {selectedCity?.name}</span>
         </div>
-
-        {/* Phase indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {['Phase 1', 'Phase 2', 'Phase 3'].map((phase, i) => {
-            const phaseYear = (i + 1) * 15
-            const active = currentYear >= phaseYear - 15 && currentYear < phaseYear
-            const done = currentYear >= phaseYear
-            return (
-              <div key={phase} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                {i > 0 && <div style={{ width: 20, height: 1, background: done ? 'var(--color-brand-accent)' : 'var(--color-border-subtle)' }} />}
-                <div style={{
-                  height: 26, padding: '0 10px', borderRadius: 4, fontSize: 11, fontWeight: 700,
-                  display: 'flex', alignItems: 'center',
-                  background: active ? 'rgba(46,134,193,0.15)' : done ? 'rgba(23,165,137,0.12)' : 'transparent',
-                  color: active ? 'var(--color-brand-primary)' : done ? 'var(--color-brand-accent)' : 'var(--color-text-muted)',
-                  border: `1px solid ${active ? 'rgba(46,134,193,0.4)' : done ? 'rgba(23,165,137,0.3)' : 'var(--color-border-subtle)'}`,
-                }}>
-                  {phase}
-                </div>
-              </div>
-            )
-          })}
+        <div style={{ display: 'grid', placeItems: 'center', minWidth: 170 }}>
+          <span style={{ color: 'var(--color-text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: 1.4 }}>YEAR</span>
+          <AnimatePresence mode="popLayout">
+            <motion.strong
+              key={currentYear}
+              initial={{ y: 18, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -18, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{ marginTop: -4, fontSize: 36, lineHeight: 0.9, fontWeight: 800, color: 'white' }}
+              aria-live="polite"
+            >
+              {currentYear}
+            </motion.strong>
+          </AnimatePresence>
         </div>
-
-        {/* Year + playback */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ textAlign: 'center', minWidth: 60 }}>
-            <div style={{ color: 'var(--color-text-muted)', fontSize: 9, fontWeight: 700, letterSpacing: 1.4, textTransform: 'uppercase' }}>Plan Year</div>
-            <AnimatePresence mode="popLayout">
-              <motion.strong
-                key={currentYear}
-                initial={{ y: 10, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: -10, opacity: 0 }}
-                transition={{ duration: 0.15 }}
-                style={{ fontSize: 22, lineHeight: 1, fontWeight: 800, color: 'white' }}
-                aria-live="polite"
-              >
-                {currentYear}
-              </motion.strong>
-            </AnimatePresence>
-          </div>
-          <button className="icon-btn" aria-label="Reset" onClick={reset}><RotateCcw size={15} /></button>
-          <button className="icon-btn" aria-label="Step back" onClick={() => step(-1)}><SkipBack size={15} /></button>
-          <button
-            className="icon-btn" aria-label="Run or pause analysis" onClick={play}
-            style={{ width: 40, height: 40, color: 'white', borderColor: 'var(--color-brand-primary)', background: 'var(--color-brand-primary)' }}
-          >
-            {isRunning && !isPaused ? <Pause size={17} /> : <Play size={17} />}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button className="icon-btn" aria-label="Reset" onClick={reset}><RotateCcw size={17} /></button>
+          <button className="icon-btn" aria-label="Step back" onClick={() => step(-1)}><SkipBack size={17} /></button>
+          <button className="icon-btn" aria-label="Play or pause" onClick={play} style={{ width: 44, height: 44, color: 'white', borderColor: 'var(--color-brand-primary)', background: 'var(--color-brand-primary)' }}>
+            {isRunning ? <Pause size={19} /> : <Play size={19} />}
           </button>
-          <button className="icon-btn" aria-label="Step forward" onClick={() => step(1)}><SkipForward size={15} /></button>
-          <select
-            value={speed}
-            onChange={(event) => setSpeed(Number(event.target.value))}
-            style={{ height: 34, border: '1px solid var(--color-border-subtle)', borderRadius: 6, background: 'var(--color-bg-panel)', color: 'var(--color-brand-secondary)', padding: '0 8px', fontWeight: 700, fontSize: 12 }}
-          >
+          <button className="icon-btn" aria-label="Step forward" onClick={() => step(1)}><SkipForward size={17} /></button>
+          <select value={speed} onChange={(event) => setSpeed(Number(event.target.value))} style={{ height: 36, border: '1px solid var(--color-border-subtle)', borderRadius: 8, background: 'var(--color-bg-panel)', color: 'var(--color-brand-secondary)', padding: '0 8px', fontWeight: 700 }}>
             {[1, 5, 10, 50].map((value) => <option key={value} value={value}>{value}x</option>)}
           </select>
         </div>
-
-        {/* Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 180, justifyContent: 'flex-end' }}>
-          <span style={{ color: connectionState === 'connected' ? 'var(--color-brand-accent)' : 'var(--color-text-muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8 }}>
-            {connectionState === 'connected' ? 'Live' : connectionState}
-          </span>
-          <button
-            className="icon-btn"
-            aria-label="Open Planning Memo"
-            onClick={openMemo}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px', width: 'auto', fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)' }}
-          >
-            <FileText size={15} />
-            Planning Memo
-          </button>
-          <button className="icon-btn" aria-label="Export data" onClick={() => {
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 160, justifyContent: 'flex-end' }}>
+          <span style={{ color: 'var(--color-text-muted)', fontSize: 11, textTransform: 'uppercase' }}>{connectionState}</span>
+          <button className="icon-btn" aria-label="Share" onClick={() => { navigator.clipboard.writeText(window.location.href); notify('success', 'Link copied to clipboard.', 2500) }}><Share2 size={17} /></button>
+          <button className="icon-btn" aria-label="Compare scenarios" onClick={() => setSplitScreen(!isSplitScreen)}><Columns2 size={17} /></button>
+          <button className="icon-btn" aria-label="Export PDF" onClick={() => {
             const session = useSimulationStore.getState().sessionId
             if (session) window.open(`/api/simulation/${session}/export`, '_blank')
-          }}>
-            <Download size={15} />
-          </button>
-          <button className="icon-btn" aria-label="Settings"><Settings size={15} /></button>
+          }}><Download size={17} /></button>
+          <button className="icon-btn" aria-label="Settings" onClick={() => setSettingsOpen(true)}><Settings size={17} /></button>
+          <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         </div>
       </div>
-
-      {/* Progress bar */}
       <div style={{ position: 'absolute', bottom: 0, left: 0, height: 2, width: `${Math.min(100, (currentYear / 50) * 100)}%`, background: 'var(--color-brand-accent)', transition: 'width 400ms ease' }} />
     </header>
   )

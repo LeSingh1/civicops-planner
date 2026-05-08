@@ -1,132 +1,156 @@
-import { motion, AnimatePresence } from 'framer-motion'
-import { useAIStore } from '@/stores/aiStore'
-import { ZONE_ICONS } from '@/utils/colorUtils'
-import { Brain, FileCheck, Loader2 } from 'lucide-react'
-
-const PLANNING_CONTEXT: Record<string, { dept: string; detail: string; cost: string; impact: string }> = {
-  HEALTH_HOSPITAL: { dept: 'Public Health', detail: '22,000 projected residents lack clinic access', cost: '$18M', impact: 'Emergency Access +24%' },
-  EDU_HIGH: { dept: 'Education', detail: '15,400 projected residents lack school access', cost: '$32M', impact: 'School Coverage +31%' },
-  BUS_STATION: { dept: 'Transit', detail: '38,000 projected residents in transit gap zone', cost: '$45M', impact: 'Transit Coverage +18%' },
-  PARK_SMALL: { dept: 'Parks', detail: '9,200 residents with no green space within 800m', cost: '$14M', impact: 'Green Space +12%' },
-  RES_HIGH_TOWER: { dept: 'Housing', detail: '11,800 projected residents in underserved area', cost: '$22M', impact: 'Community Access +19%' },
-}
+import { FileText, Search, Sparkles } from 'lucide-react'
+import { useCityStore } from '@/stores/cityStore'
+import { useScenarioStore } from '@/stores/scenarioStore'
+import { useSimulationStore } from '@/stores/simulationStore'
 
 export function AIPanel() {
-  const { explanations, latestExplanation, isGenerating, totalExplanations, cachedCount } = useAIStore()
+  const selectedCity = useCityStore((state) => state.selectedCity)
+  const activeScenario = useScenarioStore((state) => state.activeScenario)
+  const { planning, analyzeDemo, applyAIPlan, openReport } = useSimulationStore()
+  const topRecommendation = planning.topRecommendation
+  const topItem = planning.aiRecommendations.find((item) => topRecommendation.itemIds?.includes(item.id)) ?? planning.aiRecommendations[0]
+  const before = planning.beforeScores
+  const afterPreview = previewAfterMetrics(planning)
 
-  const ctx = latestExplanation ? PLANNING_CONTEXT[latestExplanation.zone_type] : undefined
+  if (!planning.hasAnalyzed) {
+    return (
+      <div className="p-3">
+        <div className="rounded-lg p-4" style={{ background: 'var(--color-bg-hover)', border: '1px solid var(--color-border-subtle)' }}>
+          <div className="font-display text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+            Ready to analyze infrastructure gaps
+          </div>
+          <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+            Run analysis to identify underserved zones and recommended fixes.
+          </p>
+          <button
+            type="button"
+            onClick={() => selectedCity && analyzeDemo(selectedCity.id, activeScenario)}
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold"
+            style={{ background: 'var(--color-bg-panel)', color: 'var(--color-accent-cyan)', border: '1px solid rgba(255,71,87,0.35)' }}
+          >
+            <Search size={15} />
+            Analyze Infrastructure Gaps
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (planning.hasAppliedAIPlan) {
+    return (
+      <div className="p-3">
+        <div className="rounded-lg p-4" style={{ background: 'rgba(0,184,148,0.08)', border: '1px solid rgba(0,184,148,0.32)' }}>
+          <div className="flex items-center gap-2 font-display text-base font-semibold" style={{ color: 'var(--color-accent-green)' }}>
+            <Sparkles size={17} />
+            AI Plan Applied
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Impact label="Residents Served" value={(planning.impactSummary?.residentsServed ?? planning.afterScores?.populationServed ?? 0).toLocaleString()} />
+            <Impact label="Gaps Improved" value={String(planning.impactSummary?.gapsFixed ?? planning.underservedZones.filter((zone) => zone.isImproved).length)} />
+            <Impact label="City Health" value={formatDelta(planning.impactSummary?.cityHealthDelta ?? delta(planning.afterScores?.cityHealth, planning.beforeScores?.cityHealth))} />
+            <Impact label="Emergency" value={formatDelta(planning.impactSummary?.emergencyDelta ?? delta(planning.afterScores?.emergencyAccess, planning.beforeScores?.emergencyAccess))} />
+            <Impact label="Equity" value={formatDelta(planning.impactSummary?.equityDelta ?? delta(planning.afterScores?.equityScore, planning.beforeScores?.equityScore))} />
+            <Impact label="15 Min City" value={formatDelta(planning.impactSummary?.fifteenMinuteDelta ?? delta(planning.afterScores?.fifteenMinuteCityScore, planning.beforeScores?.fifteenMinuteCityScore))} />
+          </div>
+          <button
+            type="button"
+            onClick={openReport}
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold"
+            style={{ background: 'var(--color-bg-panel)', color: 'var(--color-accent-purple)', border: '1px solid var(--color-border-subtle)' }}
+          >
+            <FileText size={15} />
+            Generate Report
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="p-3 space-y-3">
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2">
-        <StatCard icon={<Brain size={11} />} label="Analyzed" value={totalExplanations.toString()} />
-        <StatCard icon={<FileCheck size={11} />} label="Cached" value={cachedCount.toString()} color="text-accent-cyan" />
-        <StatCard icon={<Loader2 size={11} />} label="Live" value={(totalExplanations - cachedCount).toString()} color="text-accent-green" />
-      </div>
-
-      {/* Generating indicator */}
-      <AnimatePresence>
-        {isGenerating && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="flex items-center gap-2 text-xs"
-            style={{ color: 'var(--color-brand-primary)' }}
+    <div className="p-3">
+      <div className="rounded-lg p-4" style={{ background: 'var(--color-bg-hover)', border: '1px solid rgba(255,71,87,0.32)', boxShadow: 'var(--shadow-sm)' }}>
+        <div className="font-mono text-[10px] uppercase tracking-widest" style={{ color: 'var(--color-accent-cyan)' }}>
+          Top Problem
+        </div>
+        <div className="mt-1 font-display text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+          {topRecommendation.zoneName}
+        </div>
+        <p className="mt-3 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          Recommendation: Add {topItem?.name ?? topRecommendation.title.replace(/^Add\s+/i, '')}.
+        </p>
+        <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+          {topRecommendation.reason}
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Impact label="Emergency Access" value={metricRange(before?.emergencyAccess, afterPreview.emergencyAccess)} />
+          <Impact label="City Health" value={metricRange(before?.cityHealth, afterPreview.cityHealth)} />
+          <Impact label="Equity Score" value={metricRange(before?.equityScore, afterPreview.equityScore)} />
+          <Impact label="Commute" value={`${before?.averageCommute ?? '—'} to ${afterPreview.averageCommute} min`} />
+          <Impact label="Cost" value={formatMoney(topItem?.costEstimate ?? topRecommendation.costEstimate ?? topRecommendation.estimatedCost)} />
+          <Impact label="Confidence" value={`${Math.round((topItem?.confidence ?? topRecommendation.confidence ?? 0.82) * 100)}%`} />
+          <Impact label="Population Served" value={(topRecommendation.expectedImpact.populationServed ?? Math.round((selectedCity?.population_current ?? planning.timelinePopulation) * 0.018)).toLocaleString()} />
+        </div>
+        <div className="mt-4 grid gap-2">
+          <button
+            type="button"
+            onClick={() => applyAIPlan(activeScenario)}
+            className="rounded-lg px-3 py-2.5 text-sm font-semibold"
+            style={{ background: 'rgba(0,184,148,0.09)', color: 'var(--color-accent-green)', border: '1px solid rgba(0,184,148,0.38)' }}
           >
-            <motion.div
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ background: 'var(--color-brand-primary)' }}
-              animate={{ scale: [1, 1.5, 1] }}
-              transition={{ duration: 0.8, repeat: Infinity }}
-            />
-            Planning assistant analyzing gap data...
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Latest explanation */}
-      {latestExplanation && (
-        <motion.div
-          key={latestExplanation.id}
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ background: 'var(--color-bg-card)', borderRadius: 8, padding: 12, border: '1px solid rgba(46,134,193,0.2)' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 14 }}>{ZONE_ICONS[latestExplanation.zone_type as keyof typeof ZONE_ICONS] ?? '🏗️'}</span>
-              {ctx && (
-                <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 3, background: 'rgba(46,134,193,0.15)', color: 'var(--color-brand-primary)', fontWeight: 700 }}>
-                  {ctx.dept}
-                </span>
-              )}
-            </div>
-            <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>Year {latestExplanation.year}</span>
-          </div>
-
-          {ctx && (
-            <div style={{ marginBottom: 8, padding: '8px 10px', background: 'rgba(13,17,23,0.4)', borderRadius: 6, border: '1px solid var(--color-border-subtle)' }}>
-              <div style={{ color: 'var(--color-text-muted)', fontSize: 10, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.6 }}>Planning Rationale</div>
-              <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 12, lineHeight: 1.5 }}>
-                {ctx.dept} should be routed this infrastructure because {ctx.detail}. Estimated cost is {ctx.cost} and expected improvement is {ctx.impact}.
-              </p>
-            </div>
-          )}
-
-          <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.55 }}>
-            {latestExplanation.explanation}
-          </p>
-        </motion.div>
-      )}
-
-      {/* History */}
-      {explanations.length > 1 && (
-        <div>
-          <div style={{ color: 'var(--color-text-muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>Previous Analyses</div>
-          <div style={{ display: 'grid', gap: 8, maxHeight: 280, overflow: 'auto' }}>
-            {explanations.slice(1, 8).map((exp) => (
-              <div key={exp.id} style={{ borderLeft: '2px solid var(--color-border-subtle)', paddingLeft: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                  <span style={{ fontSize: 11 }}>{ZONE_ICONS[exp.zone_type as keyof typeof ZONE_ICONS] ?? '🏗️'}</span>
-                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{exp.zone_type} — Year {exp.year}</span>
-                </div>
-                <p style={{ margin: 0, fontSize: 11, color: 'var(--color-text-muted)', lineHeight: 1.45, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{exp.explanation}</p>
-              </div>
-            ))}
-          </div>
+            Apply Recommendation
+          </button>
+          <button
+            type="button"
+            onClick={() => applyAIPlan(activeScenario)}
+            className="rounded-lg px-3 py-2.5 text-sm font-semibold"
+            style={{ background: 'var(--color-bg-panel)', color: 'var(--color-accent-cyan)', border: '1px solid rgba(255,71,87,0.35)' }}
+          >
+            Apply Full AI Plan
+          </button>
         </div>
-      )}
-
-      {explanations.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '32px 12px' }}>
-          <Brain size={28} style={{ color: 'var(--color-text-muted)', margin: '0 auto 10px' }} />
-          <div style={{ color: 'var(--color-text-secondary)', fontSize: 13, marginBottom: 6 }}>
-            Run analysis to generate infrastructure recommendations
-          </div>
-          <div style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>
-            AI assistant will identify service gaps and routing decisions
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   )
 }
 
-function StatCard({ icon, label, value, color = 'text-text-primary' }: {
-  icon: React.ReactNode
-  label: string
-  value: string
-  color?: string
-}) {
+function Impact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-bg-card rounded-lg p-2 text-center">
-      <div className={`flex items-center justify-center gap-1 text-text-muted mb-1 ${color}`}>
-        {icon}
-        <span className="text-xs">{label}</span>
-      </div>
-      <div className={`text-lg font-bold font-mono ${color}`}>{value}</div>
+    <div className="rounded-lg p-2" style={{ background: 'rgba(255,255,255,0.32)', border: '1px solid var(--color-border-subtle)' }}>
+      <div className="font-mono text-[9px] uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>{label}</div>
+      <div className="mt-1 font-mono text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>{value}</div>
     </div>
   )
+}
+
+function previewAfterMetrics(planning: ReturnType<typeof useSimulationStore.getState>['planning']) {
+  const before = planning.beforeScores
+  const impact = planning.topRecommendation.expectedImpact
+  return {
+    emergencyAccess: clampMetric((before?.emergencyAccess ?? 0) + (impact.emergencyAccess ?? 8)),
+    cityHealth: clampMetric((before?.cityHealth ?? 0) + (impact.cityHealth ?? 8)),
+    equityScore: clampMetric((before?.equityScore ?? 0) + (impact.equityScore ?? 6)),
+    averageCommute: Math.max(12, Math.round((before?.averageCommute ?? 42) + (impact.averageResponseTime ?? -3))),
+  }
+}
+
+function clampMetric(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)))
+}
+
+function metricRange(before?: number, after?: number) {
+  return `${before ?? '—'} to ${after ?? '—'}`
+}
+
+function delta(after?: number, before?: number) {
+  if (typeof after !== 'number' || typeof before !== 'number') return 0
+  return Math.round(after - before)
+}
+
+function formatDelta(value: number) {
+  return `${value > 0 ? '+' : ''}${value}`
+}
+
+function formatMoney(value?: number) {
+  if (!value) return '$0M'
+  return `$${Math.round(value / 1_000_000)}M`
 }
